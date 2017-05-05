@@ -6,6 +6,7 @@ pseudoStarbound - An extremely basic server intended to act as a failover for la
 
 import asyncio
 import datetime
+import os
 import time
 
 bind_ip = "localhost"
@@ -121,6 +122,9 @@ async def handle_connection(reader, writer):
         return
 
 def main():
+    pidfile = open("pseudoStarbound.pid", 'w')
+    pidfile.write(str(os.getpid()))
+    pidfile.close()
     loop = asyncio.get_event_loop()
     coro = asyncio.start_server(handle_connection, bind_ip, bind_port, loop=loop)
     server = loop.run_until_complete(coro)
@@ -133,6 +137,7 @@ def main():
     server.close()
     loop.run_until_complete(server.wait_closed())
     loop.close()
+    os.remove("pseudoStarbound.pid")
 
 if __name__ == '__main__':
     main()

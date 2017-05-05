@@ -33,5 +33,5 @@ pseudoStarbound accepts clients on the configured ip:port and immediately kicks
 * The status message can be updated on-the-fly. Consider tying it into your
  monitoring/recovery solution.
 * pseudoStarbound should be fairly resilient, but consider using the
- auto-generated pidfile to check the proccess with your existing
+ auto-generated pidfile to check the process with your existing
  monitoring/recovery solution.
