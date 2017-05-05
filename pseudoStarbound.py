@@ -17,9 +17,11 @@ timeout = 10
 
 packet_ids = {"proto_request": b'\x00', "proto_response": b'\x01', "client_connect": b'\x0b', "connect_failure": b'\x04'}
 payloads = {"good_proto": b'\x02\x01', "bad_proto": b'\x02\x00'} # VLQ (\x02) + True/false.
+logfile = open("pseudoStarbound.log", 'a')
 
 def log(msg):
     print("{}: {}".format(datetime.datetime.utcnow().isoformat(), msg))
+    logfile.write("{}: {}\n".format(datetime.datetime.utcnow().isoformat(), msg))
 
 # Shamefully taken from https://github.com/StarryPy/StarryPy3k/ because VLQs suck. :c
 def buildSignedVLQ(obj):
@@ -137,6 +139,7 @@ def main():
     server.close()
     loop.run_until_complete(server.wait_closed())
     loop.close()
+    logfile.close()
     os.remove("pseudoStarbound.pid")
 
 if __name__ == '__main__':
