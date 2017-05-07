@@ -34,11 +34,12 @@ except Exception as e:
     print("Failed to read {}! Please reference {} for correct syntax.".format(config_file, example_cfg))
     print(e)
     exit(1)
-log_handler = open(log_file, 'a')
 
 def log(msg):
     print("{}: {}".format(datetime.datetime.utcnow().isoformat(), msg))
+    log_handler = open(log_file, 'a')
     log_handler.write("{}: {}\n".format(datetime.datetime.utcnow().isoformat(), msg))
+    log_handler.close()
 
 # Shamefully taken from https://github.com/StarryPy/StarryPy3k/ because VLQs suck. :c
 def buildSignedVLQ(obj):
@@ -143,13 +144,14 @@ def main():
     pid = os.getpid()
     pid_handler = open(pid_file, 'w')
     pid_handler.write(str(pid))
+    pid_handler.close()
 
     loop = asyncio.get_event_loop()
     coro = asyncio.start_server(handle_connection, bind_ip, bind_port, loop=loop)
     server = loop.run_until_complete(coro)
-    print("PID ({}) written to {}".format(pid, pid_file))
-    print("Logging to {}".format(log_file))
-    print("Listening on {}:{}".format(bind_ip, bind_port))
+    log("PID ({}) written to {}".format(pid, pid_file))
+    log("Logging to {}".format(log_file))
+    log("Listening on {}:{}".format(bind_ip, bind_port))
     try:
         loop.run_forever()
     except KeyboardInterrupt:
@@ -160,8 +162,7 @@ def main():
     loop.run_until_complete(server.wait_closed())
     loop.close()
 
-    log_handler.close()
-
+    pid_handler = open(pid_file, 'w')
     pid_handler.truncate()
     pid_handler.close
 
