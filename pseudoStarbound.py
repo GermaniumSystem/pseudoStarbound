@@ -5,23 +5,40 @@ pseudoStarbound - An extremely basic server intended to act as a failover for la
 """
 
 import asyncio
+import configparser
 import datetime
 import os
 import time
 
-bind_ip = "localhost"
-bind_port = 21026
-status_file = "status.txt"
-cur_proto = 729
-timeout = 10
+
+config_file = "config/config.cfg"
+example_cfg = "config/example.cfg"
 
 packet_ids = {"proto_request": b'\x00', "proto_response": b'\x01', "client_connect": b'\x0b', "connect_failure": b'\x04'}
 payloads = {"good_proto": b'\x02\x01', "bad_proto": b'\x02\x00'} # VLQ (\x02) + True/false.
-logfile = open("pseudoStarbound.log", 'a')
+
+config = configparser.SafeConfigParser()
+try:
+    config.read(config_file)
+    pid_file = config["main"]["pid_file"]
+    log_file = config["main"]["log_file"]
+    status_file = config["main"]["status_file"]
+    proto_version = int(config["main"]["proto_version"])
+    timeout = int(config["main"]["timeout"])
+    bind_port = int(config["main"]["bind_port"])
+    bind_ip = config["main"]["bind_ip"]
+    for option in config["main"]:
+        if not config["main"][option]:
+            raise ValueError("Config options cannot be null!")
+except Exception as e:
+    print("Failed to read {}! Please reference {} for correct syntax.".format(config_file, example_cfg))
+    print(e)
+    exit(1)
+log_handler = open(log_file, 'a')
 
 def log(msg):
     print("{}: {}".format(datetime.datetime.utcnow().isoformat(), msg))
-    logfile.write("{}: {}\n".format(datetime.datetime.utcnow().isoformat(), msg))
+    log_handler.write("{}: {}\n".format(datetime.datetime.utcnow().isoformat(), msg))
 
 # Shamefully taken from https://github.com/StarryPy/StarryPy3k/ because VLQs suck. :c
 def buildSignedVLQ(obj):
@@ -64,7 +81,6 @@ def read_packet(reader):
     data = (yield from reader.readexactly(abs(packet_len)))
     return packet_id, data
 
-
 async def handle_connection(reader, writer):
     host = writer.get_extra_info('peername')[0]
     log("Connection received from {}.".format(host))
@@ -81,7 +97,7 @@ async def handle_connection(reader, writer):
             log("- Failed to parse protocolRequest protocol ({}). Aborting connection to {}...".format(data[2:],host))
             writer.close()
             return
-        if proto == cur_proto:
+        if proto == proto_version:
             log("- Recieved expected protocol from {}. Continuing...".format(host))
             writer.write(packet_ids["proto_response"] + payloads["good_proto"])
             await writer.drain()
@@ -124,23 +140,30 @@ async def handle_connection(reader, writer):
         return
 
 def main():
-    pidfile = open("pseudoStarbound.pid", 'w')
-    pidfile.write(str(os.getpid()))
-    pidfile.close()
+    pid = os.getpid()
+    pid_handler = open(pid_file, 'w')
+    pid_handler.write(str(pid))
+
     loop = asyncio.get_event_loop()
     coro = asyncio.start_server(handle_connection, bind_ip, bind_port, loop=loop)
     server = loop.run_until_complete(coro)
-    print("Listening on {}:{}.".format(bind_ip, bind_port))
+    print("PID ({}) written to {}".format(pid, pid_file))
+    print("Logging to {}".format(log_file))
+    print("Listening on {}:{}".format(bind_ip, bind_port))
     try:
         loop.run_forever()
     except KeyboardInterrupt:
         pass
+
     print("Shutting down...")
     server.close()
     loop.run_until_complete(server.wait_closed())
     loop.close()
-    logfile.close()
-    os.remove("pseudoStarbound.pid")
+
+    log_handler.close()
+
+    pid_handler.truncate()
+    pid_handler.close
 
 if __name__ == '__main__':
     main()
