@@ -5,6 +5,8 @@
 
 logs/*
 pids/*
+!logs/.keep
+!pids/.keep
 
 config/config.cfg
 status.txt
