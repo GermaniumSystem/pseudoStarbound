@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 """
-pseudoStarbound - A simple Starbound-compatible server designed to function as a quick-n'-dirty fallback.
+A simple Starbound-compatible server designed to function as a quick-n'-dirty fallback.
 """
 
 import asyncio
@@ -13,8 +13,12 @@ import os
 config_file = "config/config.cfg"
 example_cfg = "config/example.cfg"
 
-packet_ids = {"proto_request": b'\x00', "proto_response": b'\x01', "client_connect": b'\x0b', "connect_failure": b'\x04'}
-payloads = {"good_proto": b'\x02\x01', "bad_proto": b'\x02\x00'} # VLQ (\x02) + True/false.
+packet_ids = {"proto_request":   b'\x00',
+              "proto_response":  b'\x01',
+              "client_connect":  b'\x0b',
+              "connect_failure": b'\x04'}
+payloads  =  {"good_proto": b'\x02\x01',
+              "bad_proto":  b'\x02\x00'} # VLQ (\x02) + True/false.
 
 
 def log(msg):
@@ -79,17 +83,17 @@ def read_packet(reader):
 
 async def handle_connection(reader, writer):
     """
-    Given a reader and writer, wait for new connections and respond with a
-    protocol-compliant disconnect upon successful connection.
+    Given a reader and writer, wait for new connections and respond with a protocol-compliant
+    disconnect upon successful connection.
     Handle connections in two steps:
     1. Respond to a protocol_request:
-        - If the protocol version is expected, send a protocol_response
-          containing the "good_proto" payload.
-        - If the protocol version is unexpected, send a protocol_response
-          containing the "bad_proto" payload.
+        - If the protocol version is expected, send a protocol_response containing the
+          "good_proto" payload.
+        - If the protocol version is unexpected, send a protocol_response containing the
+          "bad_proto" payload.
     2. Respond to a client_connect:
-        - Load a status_message from the status_file and send a
-          connect_failure containing the encoded status_message.
+        - Load a status_message from the status_file and send a connect_failure containing the
+          encoded status_message.
     If an unexpected packet_id is received at any point, disconnect.
 
     :param reader: Stream to receive packets from.
@@ -109,7 +113,8 @@ async def handle_connection(reader, writer):
         try:
             proto = int.from_bytes(data[2:], byteorder='big')
         except:
-            log("- Failed to parse protocol_request protocol ({}). Aborting connection to {}...".format(data[2:],host))
+            log("- Failed to parse protocol_request protocol ({}). Aborting connection to {}..."
+                "".format(data[2:],host))
             writer.close()
             return
         if proto == proto_version:
@@ -140,7 +145,8 @@ async def handle_connection(reader, writer):
             status_msg = bytes(sf.read(), 'utf-8')
             sf.close()
         except:
-            status_msg = bytes("^white; The server is currently down\n\n^red;(And the pseudoServer is misconfigured)", 'utf-8')
+            status_msg = bytes("^white; The server is currently down\n\n^red;(And the pseudoServer"
+                               " is misconfigured)", 'utf-8')
             log("! Unable to read status message from {}!".format(status_file))
         vlq = build_signed_VLQ(len(status_msg) + 1)
         length = len(status_msg).to_bytes(1, byteorder='big')
@@ -156,10 +162,10 @@ async def handle_connection(reader, writer):
 
 def main():
     """
-    Start a TCP server and wait for Starbound clients to connect. Upon a
-    successful connection, send a compliant response to the client and
-    disconnect it with a status message.
+    Start a TCP server and wait for Starbound clients to connect. Upon a successful connection,
+    send a compliant response to the client and disconnect it with a status message.
     Before starting the server:
+        Expect that all config values are populated.
         Write the PID to pid_file.
     After receiving a SIGTERM:
         Truncate pid_file.
@@ -204,7 +210,8 @@ if __name__ == '__main__':
             if not config["main"][option]:
                 raise ValueError("Config options cannot be null!")
     except Exception as e:
-        print("Failed to read {}! Please reference {} for correct syntax.".format(config_file, example_cfg))
+        print("Failed to read {}! Please reference {} for correct syntax."
+              "".format(config_file, example_cfg))
         print(e)
         exit(1)
     main()
