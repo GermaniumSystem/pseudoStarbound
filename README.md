@@ -1,6 +1,7 @@
 # pseudoStarbound
 
-A simple Starbound-compatible server designed to function as a quick-n'-dirty fallback.
+A simple Starbound-compatible server designed to function as a quick-n'-dirty
+ fallback.
 
 ----
 
@@ -18,20 +19,20 @@ pseudoStarbound accepts clients on the configured ip:port and immediately kicks
 #### Installation
 
 1. Make sure you have python3.5 or higher.
-2. Edit the settings at the top of pseudoStarbound.py. You may be able to get
- away with changing nothing or just the port.
+2. Copy the default settings from `config/example.cfg` to `config/config.cfg`
+ and edit as needed.
 3. Set a plain-text status message in the configured status file.
-4. ???
-5. Profit.
+4. Start the thing.
+5. ???
+6. Profit.
 
-#### Usage recomendations
+#### Usage recommendations
 
 * pseudoStarbound should operate on a port other that the Starbound or
  StarryPy3k server.
-* Traffic should be redirected to pseudoStarbound when needed. iptables NAT
- works well enough.
+* Traffic should be redirected to pseudoStarbound on an as-needed basis.
+ iptables NAT works well enough.
 * The status message can be updated on-the-fly. Consider tying it into your
  monitoring/recovery solution.
-* pseudoStarbound should be fairly resilient, but consider using the
- auto-generated pidfile to check the process with your existing
- monitoring/recovery solution.
+* pseudoStarbound should be fairly resilient, but consider using the PID file
+ to check the process with your existing  monitoring/recovery solution.
