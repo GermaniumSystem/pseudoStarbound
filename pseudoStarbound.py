@@ -14,10 +14,26 @@ config_file = "config/config.cfg"
 example_cfg = "config/example.cfg"
 
 packet_ids = {}
-packet_ids['proto_request'] =   {'72x': b'\x00', '74x': b'\x00'}
-packet_ids['proto_response'] =  {'72x': b'\x01', '74x': b'\x01'}
-packet_ids['client_connect'] =  {'72x': b'\x0b', '74x': b'\x0c'}
-packet_ids['connect_failure'] = {'72x': b'\x04', '74x': b'\x04'}
+packet_ids['proto_request'] =   { 742: b'\x00',  # 1.3
+                                  729: b'\x00',  # 1.2
+                                  724: b'\x00',  # 1.1
+                                  723: b'\x09' } # 1.0 - Questionable implementation. I don't have a copy to test with.
+# Can't support versions before 1.0. Their archetecture is different enough to make it impossible.
+
+packet_ids['proto_response'] =  { 742: b'\x01',
+                                  729: b'\x01',
+                                  724: b'\x01',
+                                  723: b'\x01' }
+
+packet_ids['client_connect'] =  { 742: b'\x0c',
+                                  729: b'\x0b',
+                                  724: b'\x0a',
+                                  723: b'\x0a' }
+
+packet_ids['connect_failure'] = { 742: b'\x04',
+                                  729: b'\x04',
+                                  724: b'\x04',
+                                  723: b'\x03' }
 
 payloads  =  {"good_proto": b'\x02\x01',
               "bad_proto":  b'\x02\x00'} # VLQ (\x02) + True/false.
@@ -118,15 +134,14 @@ async def handle_connection(reader, writer):
                 "".format(data[2:],host))
             writer.close()
             return
-        proto = str(proto)[:-1] + 'x' # Replace the last digit with an x, so we can compare it directly.
         if proto in packet_ids['proto_request'].keys():
             log("- Received known protocol {} from {}. Continuing...".format(proto,host))
             writer.write(packet_ids["proto_response"][proto] + payloads["good_proto"])
             await writer.drain()
         else:
             log("- Unsupported protocol ({}). Aborting connection to {}...".format(proto,host))
-            # If we're unfamiliar with the protocol, fallback to using the first (and hopefully newest) protocol's ID.
-            writer.write(packet_ids["proto_response"][list(packet_ids['proto_response'].keys())[0]] + payloads["bad_proto"])
+            # If we're unfamiliar with the protocol, fallback to using the highest (and hopefully newest) protocol's ID.
+            writer.write(packet_ids["proto_response"][sorted(packet_ids['proto_response'].keys())[-1]] + payloads["bad_proto"])
             await writer.drain()
             writer.close()
             return
