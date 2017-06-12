@@ -13,13 +13,14 @@ import os
 config_file = "config/config.cfg"
 example_cfg = "config/example.cfg"
 
-packet_ids = {"proto_request":   b'\x00',
-              "proto_response":  b'\x01',
-              "client_connect":  b'\x0b',
-              "connect_failure": b'\x04'}
+packet_ids = {}
+packet_ids['proto_request'] =   {'72x': b'\x00', '74x': b'\x00'}
+packet_ids['proto_response'] =  {'72x': b'\x01', '74x': b'\x01'}
+packet_ids['client_connect'] =  {'72x': b'\x0b', '74x': b'\x0c'}
+packet_ids['connect_failure'] = {'72x': b'\x04', '74x': b'\x04'}
+
 payloads  =  {"good_proto": b'\x02\x01',
               "bad_proto":  b'\x02\x00'} # VLQ (\x02) + True/false.
-
 
 def log(msg):
     """Given a msg, print it to stdout and write it to log_file."""
@@ -109,7 +110,7 @@ async def handle_connection(reader, writer):
         log(" - Lost connection to {}.".format(host))
         writer.close()
         return
-    if packet_id == packet_ids["proto_request"]:
+    if packet_id in packet_ids["proto_request"].values():
         try:
             proto = int.from_bytes(data[2:], byteorder='big')
         except:
@@ -117,13 +118,15 @@ async def handle_connection(reader, writer):
                 "".format(data[2:],host))
             writer.close()
             return
-        if proto == proto_version:
-            log("- Received expected protocol from {}. Continuing...".format(host))
-            writer.write(packet_ids["proto_response"] + payloads["good_proto"])
+        proto = str(proto)[:-1] + 'x' # Replace the last digit with an x, so we can compare it directly.
+        if proto in packet_ids['proto_request'].keys():
+            log("- Received known protocol {} from {}. Continuing...".format(proto,host))
+            writer.write(packet_ids["proto_response"][proto] + payloads["good_proto"])
             await writer.drain()
         else:
             log("- Unsupported protocol ({}). Aborting connection to {}...".format(proto,host))
-            writer.write(packet_ids["proto_response"] + payloads["bad_proto"])
+            # If we're unfamiliar with the protocol, fallback to using the first (and hopefully newest) protocol's ID.
+            writer.write(packet_ids["proto_response"][list(packet_ids['proto_response'].keys())[0]] + payloads["bad_proto"])
             await writer.drain()
             writer.close()
             return
@@ -138,7 +141,7 @@ async def handle_connection(reader, writer):
         log("- Lost connection to {}.".format(host))
         writer.close()
         return
-    if packet_id == packet_ids["client_connect"]:
+    if packet_id == packet_ids["client_connect"][proto]:
         log("- Disconnecting {} with status message and aborting connection.".format(host))
         try:
             sf = open(status_file, 'r')
@@ -150,7 +153,7 @@ async def handle_connection(reader, writer):
             log("! Unable to read status message from {}!".format(status_file))
         vlq = build_signed_VLQ(len(status_msg) + 1)
         length = len(status_msg).to_bytes(1, byteorder='big')
-        writer.write(packet_ids["connect_failure"] + vlq + length + status_msg)
+        writer.write(packet_ids["connect_failure"][proto] + vlq + length + status_msg)
         await writer.drain()
         writer.close()
         return
@@ -202,7 +205,6 @@ if __name__ == '__main__':
         pid_file      =     config["main"]["pid_file"]
         log_file      =     config["main"]["log_file"]
         status_file   =     config["main"]["status_file"]
-        proto_version = int(config["main"]["proto_version"])
         timeout       = int(config["main"]["timeout"])
         bind_port     = int(config["main"]["bind_port"])
         bind_ip       =     config["main"]["bind_ip"]
