@@ -14,23 +14,27 @@ config_file = "config/config.cfg"
 example_cfg = "config/example.cfg"
 
 packet_ids = {}
-packet_ids['proto_request'] =   { 742: b'\x00',  # 1.3
+packet_ids['proto_request'] =   { 743: b'\x00',  # 1.3.2
+                                  742: b'\x00',  # 1.3
                                   729: b'\x00',  # 1.2
                                   724: b'\x00',  # 1.1
                                   723: b'\x09' } # 1.0 - Questionable implementation. I don't have a copy to test with.
 # Can't support versions before 1.0. Their archetecture is different enough to make it impossible.
 
-packet_ids['proto_response'] =  { 742: b'\x01',
+packet_ids['proto_response'] =  { 743: b'\x01',
+                                  742: b'\x01',
                                   729: b'\x01',
                                   724: b'\x01',
                                   723: b'\x01' }
 
-packet_ids['client_connect'] =  { 742: b'\x0c',
+packet_ids['client_connect'] =  { 743: b'\x0c',
+                                  742: b'\x0c',
                                   729: b'\x0b',
                                   724: b'\x0a',
                                   723: b'\x0a' }
 
-packet_ids['connect_failure'] = { 742: b'\x04',
+packet_ids['connect_failure'] = { 743: b'\x04',
+                                  742: b'\x04',
                                   729: b'\x04',
                                   724: b'\x04',
                                   723: b'\x03' }
