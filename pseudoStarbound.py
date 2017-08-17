@@ -8,7 +8,8 @@ import asyncio
 import configparser
 import datetime
 import os
-
+import random
+import struct
 
 config_file = "config/config.cfg"
 example_cfg = "config/example.cfg"
@@ -102,7 +103,7 @@ def read_packet(reader):
     return packet_id, data
 
 
-async def handle_connection(reader, writer):
+async def handle_tcp_connection(reader, writer):
     """
     Given a reader and writer, wait for new connections and respond with a protocol-compliant
     disconnect upon successful connection.
@@ -182,6 +183,69 @@ async def handle_connection(reader, writer):
         return
 
 
+class HandleUDPConnection():
+    def connection_made(self, transport):
+        self.transport = transport
+
+    def datagram_received(self, data, addr):
+        host = addr[0]
+        log("Datagram received from {}.".format(host))
+        try:
+            packet_id = data[0:4]
+            command_id = data[4:5]
+            if packet_id != b'\xff\xff\xff\xff':
+                log("- Unexpected packet ID {}.".format(packet_id))
+            elif command_id == b'\x54': # A2S_INFO
+                payload  = b'\xff\xff\xff\xff' # Packet ID.
+                payload += b'\x49' # Header byte.
+                payload += b'\x07'# Protocol. ...of something. Completely unrelated to any other version strings, AFAIK.
+                payload += bytes(server_name, 'utf-8')
+                payload += b'\x00'
+                payload += bytes("Unknown", 'utf-8') # Map name. Default when no worlds are loaded.
+                payload += b'\x00'
+                payload += bytes("starbound", 'utf-8') # Folder. Default for normal installations. Sidenote, WTF? Why would you need to tell people what local folder the game is running in?
+                payload += b'\x00'
+                payload += bytes("Starbound", 'utf-8') # Game name.
+                payload += b'\x00'
+                payload += b'\xfe\xff' # This is supposed to be the applications Steam App ID. Except it isn't. It's not the App ID of anything. *shrug*
+                payload += b'\x00' # Players online.
+                payload += bytes([max_players]) # Maximum players.
+                payload += b'\x00' # Bots online.
+                payload += b'\x44' # Server type. 'D' for 'Dedicated'
+                payload += bytes(operating_sys[0].upper(), 'utf-8') # Environment. 'L' for 'Linux', 'W' for 'Windows', 'M' (or 'O'?) for 'Mac'
+                payload += b'\x00' # Visibility.
+                payload += b'\x00' # VAC.
+                payload += bytes(version, 'utf-8') # Game version.
+                payload += b'\x00'
+                payload += b'\x80\x00\x00' # This is supposed to be a flag and the server's port number. Again, it isn't... but it's sent even though it's entirely optional.
+                # Phew...
+                self.transport.sendto(payload, addr)
+                log("- Handled A2S_INFO command.")
+            elif command_id == b'\x55': # A2S_PLAYER
+                payload  = b'\xff\xff\xff\xff' # Packet ID.
+                payload += b'\x44' # Header.
+                payload += b'\x00' # Players online.
+                self.transport.sendto(payload, addr)
+                log("- Handled A2S_PLAYER command.")
+            elif command_id == b'\x56': # A2S_RULES
+                payload  = b'\xff\xff\xff\xff' # Packet ID.
+                payload += b'\x45' # Header. NOTE: Docs say this should be b'\x41', but... Starbound.
+                payload += b'\x01\x00plugins\x00none\x00' # Default string. Not sure what this is. Mods don't seem to affect it.
+                self.transport.sendto(payload, addr)
+                log("- Handled A2S_RULES command.")
+            elif command_id == b'\x57': # A2S_SERVERQUERY_GETCHALLENGE
+                payload  = b'\xff\xff\xff\xff' # Packet ID.
+                payload += b'\x41' # Header.
+                payload += bytes(random.getrandbits(8) for _ in range(4)) # Challenge. We're not going to pay attention to it later, so there's no need to store it.
+                self.transport.sendto(payload, addr)
+                log("- Handled A2S_SERVERQUERY_GETCHALLENGE command.")
+            else:
+                log("- Unknown command id '{}'".format(command_id))
+        except Exception as e:
+            log("- Malformed datagram.")
+            print(e)
+
+
 def main():
     """
     Start a TCP server and wait for Starbound clients to connect. Upon a successful connection,
@@ -198,19 +262,23 @@ def main():
     pf.close()
 
     loop = asyncio.get_event_loop()
-    coro = asyncio.start_server(handle_connection, bind_ip, bind_port, loop=loop)
-    server = loop.run_until_complete(coro)
+    coro_tcp = asyncio.start_server(handle_tcp_connection, bind_ip, bind_port, loop=loop)
+    coro_udp = loop.create_datagram_endpoint(HandleUDPConnection, local_addr=(bind_ip, bind_rq_port))
+    server_tcp = loop.run_until_complete(coro_tcp)
+    server_udp = loop.run_until_complete(coro_udp)
     log("PID ({}) written to {}".format(pid, pid_file))
     log("Logging to {}".format(log_file))
-    log("Listening on {}:{}".format(bind_ip, bind_port))
+    log("Listening on {}:{} (TCP) and {}:{} (UDP)".format(bind_ip, bind_port, bind_ip, bind_rq_port))
     try:
         loop.run_forever()
     except KeyboardInterrupt:
         pass
 
     print("Shutting down...")
-    server.close()
-    loop.run_until_complete(server.wait_closed())
+    server_tcp.close()
+    server_udp.close()
+    loop.run_until_complete(server_tcp.wait_closed())
+    loop.run_until_complete(server_udp.wait_closed())
     loop.close()
 
     pf = open(pid_file, 'w')
@@ -227,6 +295,11 @@ if __name__ == '__main__':
         timeout       = int(config["main"]["timeout"])
         bind_port     = int(config["main"]["bind_port"])
         bind_ip       =     config["main"]["bind_ip"]
+        bind_rq_port  = int(config["main"]["rquery_port"])
+        server_name   =     config["main"]["server_name"]
+        version       =     config["main"]["version"]
+        max_players   = int(config["main"]["max_players"])
+        operating_sys =     config["main"]["operating_system"]
         for option in config["main"]:
             if not config["main"][option]:
                 raise ValueError("Config options cannot be null!")
