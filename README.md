@@ -14,7 +14,9 @@ Running a Starbound server sucks. There are many reasons for this, but one of
 
 pseudoStarbound accepts clients on the configured ip:port and immediately kicks
  them with a configured status message. This message is simply stored in a file
- and can be changed on-the-fly without restarting pseudoStarbound.
+ and can be changed on-the-fly without restarting pseudoStarbound. Additionally,
+ pseudoStarbound how has RQuery support! It will respond to rquery commands just
+ like a real server would (including the obligatory Starbound quirks).
 
 #### Installation
 
@@ -28,8 +30,8 @@ pseudoStarbound accepts clients on the configured ip:port and immediately kicks
 
 #### Usage recommendations
 
-* pseudoStarbound should operate on a port other that the Starbound or
- StarryPy3k server.
+* pseudoStarbound should operate on ports other that the ones Starbound or
+ StarryPy3k use.
 * Traffic should be redirected to pseudoStarbound on an as-needed basis.
  iptables NAT works well enough.
 * The status message can be updated on-the-fly. Consider tying it into your
