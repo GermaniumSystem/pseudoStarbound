@@ -15,7 +15,7 @@ Running a Starbound server sucks. There are many reasons for this, but one of
 pseudoStarbound accepts clients on the configured ip:port and immediately kicks
  them with a configured status message. This message is simply stored in a file
  and can be changed on-the-fly without restarting pseudoStarbound. Additionally,
- pseudoStarbound how has RQuery support! It will respond to rquery commands just
+ pseudoStarbound now has RQuery support! It will respond to RQuery commands just
  like a real server would (including the obligatory Starbound quirks).
 
 #### Installation
