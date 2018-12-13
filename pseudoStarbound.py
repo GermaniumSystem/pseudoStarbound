@@ -94,6 +94,25 @@ def read_signed_VLQ(reader):
         return -((v >> 1) + 1)
 
 
+# Again, shamefully taken from StarryPy3k, because VLQs suck.
+def build_unsigned_VLQ(length):
+    result = bytearray()
+    value = int(length)
+    if length == 0:
+        result = bytearray(b'\x00')
+    else:
+        while value > 0:
+            byte = value & 0x7f
+            value >>= 7
+            if value != 0:
+                byte |= 0x80
+            result.insert(0, byte)
+        if len(result) > 1:
+            result[0] |= 0x80
+            result[-1] ^= 0x80
+    return bytes(result)
+
+
 def read_packet(reader):
     """
     Given a reader, read a packet_id, decode the VLQ, and read contents.
@@ -175,9 +194,9 @@ async def handle_tcp_connection(reader, writer):
             status_msg = bytes("^white; The server is currently down\n\n^red;(And the pseudoServer"
                                " is misconfigured)", 'utf-8')
             log("! Unable to read status message from {}!".format(status_file))
-        vlq = build_signed_VLQ(len(status_msg) + 1)
-        length = len(status_msg).to_bytes(1, byteorder='big')
-        writer.write(packet_ids["connect_failure"][proto] + vlq + length + status_msg)
+        msg_vlq = build_unsigned_VLQ(len(status_msg))
+        packet_vlq = build_signed_VLQ(len(status_msg) + len(msg_vlq))
+        writer.write(packet_ids["connect_failure"][proto] + packet_vlq + msg_vlq + status_msg)
         await writer.drain()
         writer.close()
         return
