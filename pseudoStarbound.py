@@ -30,7 +30,7 @@ packet_ids['proto_response'] =  { 745: b'\x01',
                                   724: b'\x01',
                                   723: b'\x01' }
 
-packet_ids['client_connect'] =  { 745: b'\x0c',
+packet_ids['client_connect'] =  { 745: b'\x0d',
                                   743: b'\x0c',
                                   742: b'\x0c',
                                   729: b'\x0b',
