@@ -15,7 +15,8 @@ config_file = "config/config.cfg"
 example_cfg = "config/example.cfg"
 
 packet_ids = {}
-packet_ids['proto_request'] =   { 745: b'\x00',  # 1.3.4
+packet_ids['proto_request'] =   { 746: b'\x00',  # 1.4.1
+                                  745: b'\x00',  # 1.3.4
                                   743: b'\x00',  # 1.3.2
                                   742: b'\x00',  # 1.3
                                   729: b'\x00',  # 1.2
@@ -23,21 +24,24 @@ packet_ids['proto_request'] =   { 745: b'\x00',  # 1.3.4
                                   723: b'\x09' } # 1.0 - Questionable implementation. I don't have a copy to test with.
 # Can't support versions before 1.0. Their archetecture is different enough to make it impossible.
 
-packet_ids['proto_response'] =  { 745: b'\x01',
+packet_ids['proto_response'] =  { 746: b'\x01',
+                                  745: b'\x01',
                                   743: b'\x01',
                                   742: b'\x01',
                                   729: b'\x01',
                                   724: b'\x01',
                                   723: b'\x01' }
 
-packet_ids['client_connect'] =  { 745: b'\x0d',
+packet_ids['client_connect'] =  { 746: b'\x0d',
+                                  745: b'\x0d',
                                   743: b'\x0c',
                                   742: b'\x0c',
                                   729: b'\x0b',
                                   724: b'\x0a',
                                   723: b'\x0a' }
 
-packet_ids['connect_failure'] = { 745: b'\x04',
+packet_ids['connect_failure'] = { 746: b'\x04',
+                                  745: b'\x04',
                                   743: b'\x04',
                                   742: b'\x04',
                                   729: b'\x04',
